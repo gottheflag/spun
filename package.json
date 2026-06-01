@@ -1,0 +1,63 @@
+{
+    "name": "@gottheflag/spun",
+    "version": "0.1.0-beta.1",
+    "type": "module",
+    "license": "Apache-2.0",
+    "author": {
+        "name": "GTF",
+        "email": "dev@gottheflag.sa",
+        "url": "https://gottheflag.sa"
+    },
+    "description": "Composable binary layouts, inspection, editing, and schemes.",
+    "files": ["dist"],
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js"
+        },
+        "./scheme": {
+            "types": "./dist/scheme/index.d.ts",
+            "import": "./dist/scheme/index.js"
+        },
+        "./node": {
+            "types": "./dist/node/index.d.ts",
+            "import": "./dist/node/index.js"
+        },
+        "./layout": {
+            "types": "./dist/layout/index.d.ts",
+            "import": "./dist/layout/index.js"
+        },
+        "./inspect": {
+            "types": "./dist/inspect/index.d.ts",
+            "import": "./dist/inspect/index.js"
+        }
+    },
+    "keywords": [
+        "binary"
+    ],
+    "publishConfig": {
+        "access": "public"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/gottheflag/spun"
+    },
+    "bugs": {
+        "url": "https://github.com/gottheflag/spun/issues"
+    },
+    "homepage": "https://github.com/gottheflag/spun#readme",
+    "scripts": {
+        "dev": "tsc --watch",
+        "build": "tsup",
+        "typecheck": "tsc --noEmit",
+        "prepare": "pnpm run build",
+        "test": "tsx tests/run.ts"
+    },
+    "devDependencies": {
+        "tsup": "^8.5",
+        "tsx": "^4.21",
+        "typescript": "^5.9"
+    }
+}

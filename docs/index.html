@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>spun • documentation</title>
+	<link href="./assets/fonts/index.css" rel="stylesheet">
+	<link rel="icon" href="./assets/logo.png">
+	<link rel="stylesheet" href="./assets/style.css">
+</head>
+
+<body>
+
+	<!-- SIDEBAR -->
+	<aside class="sidebar">
+		<div class="sidebar-logo">
+			<span class="sidebar-logo-text">spun</span>
+			<span class="sidebar-badge">alpha</span>
+		</div>
+		<nav class="sidebar-nav">
+			<div class="nav-group">
+				<div class="nav-group-label">Introduction</div>
+				<a href="#overview">Overview</a>
+				<a href="#install">Installation</a>
+				<a href="#pipeline">Pipeline</a>
+				<a href="#usecases">Use cases</a>
+			</div>
+			<div class="nav-group">
+				<div class="nav-group-label">Primitives</div>
+				<a href="#integers">Integers</a>
+				<a href="#bytes">bytes()</a>
+				<a href="#tag">tag()</a>
+				<a href="#pad">pad() / align()</a>
+				<a href="#ref">ref()</a>
+				<a href="#reserve">reserve</a>
+			</div>
+			<div class="nav-group">
+				<div class="nav-group-label">Composition</div>
+				<a href="#layout">layout()</a>
+				<a href="#section">section()</a>
+			</div>
+			<div class="nav-group">
+				<div class="nav-group-label">Emission</div>
+				<a href="#emit">emit()</a>
+				<a href="#resolve">resolve()</a>
+			</div>
+			<div class="nav-group">
+				<div class="nav-group-label">Schemes</div>
+				<a href="#scheme">scheme()</a>
+				<a href="#field">field()</a>
+				<a href="#sizeof">sizeof()</a>
+				<a href="#schemeload">scheme.load()</a>
+			</div>
+			<div class="nav-group">
+				<div class="nav-group-label">Layout API</div>
+				<a href="#get">layout.get()</a>
+				<a href="#fieldset">field.set()</a>
+			</div>
+			<div class="nav-group">
+				<div class="nav-group-label">Inspection</div>
+				<a href="#inspect">inspect()</a>
+				<a href="#treeview">treeview()</a>
+				<a href="#hexdump">hexdump()</a>
+				<a href="#serialize">serialize()</a>
+			</div>
+			<div class="nav-group">
+				<div class="nav-group-label">Extension</div>
+				<a href="#custom">Custom nodes</a>
+				<a href="#registry">registerNode()</a>
+			</div>
+			<div class="nav-group">
+				<div class="nav-group-label">Guides</div>
+				<a href="#guide-bmp">Emit a BMP file</a>
+				<a href="#guide-parse">Parse a BMP file</a>
+				<a href="#guide-custom">Custom node</a>
+			</div>
+		</nav>
+	</aside>
+
+	<!-- MAIN -->
+	<main class="main">
+		<div class="content">
+
+			<!-- HERO -->
+			<div class="hero doc-section" id="overview">
+				<div class="hero-eyebrow">spun - TypeScript binary layout engine</div>
+				<h1>Binary as a structured document.</h1>
+				<p style="font-size:17px;font-weight:300;max-width:620px;margin-bottom:1.5rem">
+					spun builds composable, inspectable in-memory layout graphs. Instead of writing bytes immediately,
+					you construct a graph of typed nodes, resolve it, and emit - or parse any binary file back into the
+					same graph using a scheme.
+				</p>
+				<div class="install-strip">
+					<span class="install-prefix">$</span>
+					<span class="install-cmd">npm install @gottheflag/spun</span>
+					<button class="install-copy"
+						onclick="navigator.clipboard.writeText('npm install @gottheflag/spun');this.textContent='copied';setTimeout(()=>this.textContent='copy',1500)">copy</button>
+				</div>
+			</div>
+
+			<p>Most binary tooling forces a choice: write bytes immediately, or parse into plain objects. spun does
+				neither. A layout is a <strong>retained graph</strong> - you can inspect it, edit it, resolve references
+				across it, and emit to bytes only when ready. Parsing a file produces the same kind of graph, giving you
+				a uniform API for both reading and writing.</p>
+
+			<div class="overview-grid">
+				<div class="overview-card">
+					<div class="overview-icon">1</div>
+					<div class="overview-title">Retained graph</div>
+					<div class="overview-desc">Nothing is written immediately. Every call builds a typed node in memory.
+					</div>
+				</div>
+				<div class="overview-card">
+					<div class="overview-icon">2</div>
+					<div class="overview-title">Two directions</div>
+					<div class="overview-desc"><code>layout</code> emits binary. <code>scheme</code> parses binary back
+						into a live layout.</div>
+				</div>
+				<div class="overview-card">
+					<div class="overview-icon">3</div>
+					<div class="overview-title">Symbolic refs</div>
+					<div class="overview-desc">Reference sections by node. Offsets resolve automatically at emit time.
+					</div>
+				</div>
+				<div class="overview-card">
+					<div class="overview-icon">4</div>
+					<div class="overview-title">Deferred values</div>
+					<div class="overview-desc">Reserve space now, fill checksums or sizes in after the layout is built.
+					</div>
+				</div>
+				<div class="overview-card">
+					<div class="overview-icon">5</div>
+					<div class="overview-title">Inspectable</div>
+					<div class="overview-desc"><code>inspect()</code> returns a JSON-serializable tree of every node
+						with offsets and sizes.</div>
+				</div>
+				<div class="overview-card">
+					<div class="overview-icon">6</div>
+					<div class="overview-title">Extensible</div>
+					<div class="overview-desc">Subclass <code>LayoutNode</code> to create custom types that integrate
+						with the full API.</div>
+				</div>
+			</div>
+
+			<!-- INSTALL -->
+			<h2 class="doc-section" id="install">Installation</h2>
+
+			<p>spun has zero runtime dependencies. It targets ES2022 and works in Node.js, Bun, Deno, browsers, and
+				workers. No <code>node:buffer</code> dependency.</p>
+
+			<pre><span class="cm"># npm / pnpm / bun</span>
+npm install @gottheflag/spun
+pnpm add @gottheflag/spun
+bun add @gottheflag/spun</pre>
+
+			<pre><span class="kw">import</span> {
+  layout, section, emit,
+  u8, u16, u32, i8, i16, i32,
+  bytes, tag, pad, align,
+  ref, reserve,
+  scheme, field, sizeof,
+  inspect, treeview, hexdump, serialize,
+  registerNode, LayoutNode,
+} <span class="kw">from</span> <span class="str">"@gottheflag/spun"</span>;</pre>
+
+			<!-- PIPELINE -->
+			<h2 class="doc-section" id="pipeline">The Pipeline</h2>
+
+			<p>Every spun workflow follows three clean stages, always separated. You never skip from construction to
+				bytes without the resolution step in between.</p>
+
+			<div class="pipeline">
+				<div class="pipeline-step">
+					<div class="pipeline-num">01 - CONSTRUCTION</div>
+					<div class="pipeline-title">Build the graph</div>
+					<div class="pipeline-desc">Compose nodes and sections into a retained layout. No bytes written.
+					</div>
+				</div>
+				<div class="pipeline-step">
+					<div class="pipeline-num">02 - RESOLUTION</div>
+					<div class="pipeline-title">Compute geometry</div>
+					<div class="pipeline-desc">Offsets, alignments, symbolic refs, and padding are resolved across the
+						graph.</div>
+				</div>
+				<div class="pipeline-step">
+					<div class="pipeline-num">03 - EMISSION</div>
+					<div class="pipeline-title">Output binary</div>
+					<div class="pipeline-desc">Call <code>emit(layout)</code> to get a <code>Uint8Array</code>.
+						Resolution runs automatically.</div>
+				</div>
+			</div>
+
+			<pre><span class="kw">const</span> file = <span class="fn">layout</span>(                          <span class="cm">// 1. construction</span>
+  <span class="fn">section</span>(<span class="str">"header"</span>, <span class="fn">tag</span>(<span class="str">"EXE"</span>), <span class="fn">u16</span>(<span class="num">1</span>), <span class="fn">pad</span>(<span class="num">2</span>)),
+);
+
+<span class="kw">const</span> buf = <span class="fn">emit</span>(file);                        <span class="cm">// 2 + 3. resolve + emit</span>
+<span class="cm">// buf → Uint8Array [45 58 45 00 01 00 00 00]</span></pre>
+
+			<!-- USE CASES -->
+			<h2 class="doc-section" id="usecases">Use Cases</h2>
+
+			<ul>
+				<li><strong>Binary file authoring</strong> - design and emit BMP, WAV, EXE, custom game formats, font
+					files, and any structured binary format.</li>
+				<li><strong>Binary file parsing</strong> - define a scheme describing a format's structure, then load
+					any conforming file into an inspectable layout graph.</li>
+				<li><strong>Reverse engineering</strong> - parse an unknown binary into named, offset-annotated
+					sections. Modify fields and re-emit.</li>
+				<li><strong>Tooling and GUI editors</strong> - <code>inspect()</code> returns a JSON-serializable tree,
+					ready for rendering in any UI.</li>
+				<li><strong>Checksums and patching</strong> - use <code>reserve</code> to hold space, compute values
+					after the layout is built, and re-emit cleanly.</li>
+				<li><strong>Persistent binary documents</strong> - serialize any layout to JSON with
+					<code>inspect()</code>, restore a fully live layout with <code>serialize()</code>.
+				</li>
+			</ul>
+
+			<!-- PRIMITIVES -->
+
+			<h2 class="doc-section" id="integers">Integer Nodes</h2>
+
+			<p>Six unsigned and signed integer primitives. All are <strong>little-endian</strong>. The
+				<code>value</code> argument is optional and defaults to <code>0</code> - useful when defining scheme
+				templates where values come from the parsed buffer.
+			</p>
+
+			<table class="api-table">
+				<tr>
+					<th>Function</th>
+					<th>Size</th>
+					<th>Range</th>
+				</tr>
+				<tr>
+					<td>u8(value?)</td>
+					<td>1 byte</td>
+					<td>0 - 255</td>
+				</tr>
+				<tr>
+					<td>u16(value?)</td>
+					<td>2 bytes</td>
+					<td>0 - 65 535</td>
+				</tr>
+				<tr>
+					<td>u32(value?)</td>
+					<td>4 bytes</td>
+					<td>0 - 4 294 967 295</td>
+				</tr>
+				<tr>
+					<td>i8(value?)</td>
+					<td>1 byte</td>
+					<td>-128 - 127</td>
+				</tr>
+				<tr>
+					<td>i16(value?)</td>
+					<td>2 bytes</td>
+					<td>-32 768 - 32 767</td>
+				</tr>
+				<tr>
+					<td>i32(value?)</td>
+					<td>4 bytes</td>
+					<td>-2 147 483 648 - 2 147 483 647</td>
+				</tr>
+			</table>
+
+			<pre><span class="kw">const</span> a = <span class="fn">u8</span>(<span class="num">255</span>);
+<span class="kw">const</span> b = <span class="fn">u16</span>(<span class="num">0x0102</span>);    <span class="cm">// emits: 02 01 (little-endian)</span>
+<span class="kw">const</span> c = <span class="fn">u32</span>(<span class="num">0xDEADBEEF</span>);
+<span class="kw">const</span> d = <span class="fn">i32</span>(<span class="op">-</span><span class="num">1</span>);
+
+a.size;   <span class="cm">// 1</span>
+a.value;  <span class="cm">// 255</span>
+
+<span class="cm">// in scheme context - value filled by load()</span>
+<span class="kw">const</span> slot = <span class="fn">u32</span>();  <span class="cm">// defaults to 0</span></pre>
+
+			<!-- BYTES -->
+			<h2 class="doc-section" id="bytes">bytes()</h2>
+
+			<p>Holds a raw binary blob. Four call signatures cover emit and parse contexts:</p>
+
+			<table class="api-table">
+				<tr>
+					<th>Signature</th>
+					<th>Context</th>
+					<th>Behaviour</th>
+				</tr>
+				<tr>
+					<td>bytes(data: Uint8Array)</td>
+					<td>Emit</td>
+					<td>Size and content from <code>data</code>.</td>
+				</tr>
+				<tr>
+					<td>bytes(n: number)</td>
+					<td>Both</td>
+					<td>Fixed <code>n</code>-byte slot.</td>
+				</tr>
+				<tr>
+					<td>bytes(() => node.value)</td>
+					<td>Parse</td>
+					<td>Lazy - size evaluated at parse time.</td>
+				</tr>
+				<tr>
+					<td>bytes(sizeof("field"))</td>
+					<td>Scheme</td>
+					<td>Size from a named <code>field()</code> in the same scheme.</td>
+				</tr>
+				<tr>
+					<td>bytes()</td>
+					<td>Parse</td>
+					<td>Remainder - consumes all remaining bytes.</td>
+				</tr>
+			</table>
+
+			<pre><span class="kw">const</span> data = <span class="kw">new</span> <span class="tp">Uint8Array</span>([<span class="num">0xAA</span>, <span class="num">0xBB</span>, <span class="num">0xCC</span>]);
+
+<span class="fn">bytes</span>(data);             <span class="cm">// emit: 3 bytes from data</span>
+<span class="fn">bytes</span>(<span class="num">16</span>);               <span class="cm">// fixed: always 16 bytes</span>
+<span class="fn">bytes</span>(() => n.value);    <span class="cm">// lazy: size from another node at parse time</span>
+<span class="fn">bytes</span>(<span class="fn">sizeof</span>(<span class="str">"size"</span>));   <span class="cm">// scheme: size from a named field</span>
+<span class="fn">bytes</span>();                 <span class="cm">// remainder: consumes rest of buffer</span></pre>
+
+			<!-- TAG -->
+			<h2 class="doc-section" id="tag">tag()</h2>
+
+			<p>Encodes an ASCII string literal as raw bytes - one byte per character. Commonly used for binary magic
+				numbers, format signatures, and chunk identifiers.</p>
+
+			<div class="sig"><span class="fn">tag</span>(source: <span class="tp">string</span> | <span
+					class="tp">number</span>): <span class="tp">TagNode</span></div>
+
+			<p>Called with a <strong>string</strong> - size is the string length, value is the string. Called with a
+				<strong>number</strong> - reserves that many bytes for parsing (scheme use).
+			</p>
+
+			<pre><span class="fn">tag</span>(<span class="str">"BM"</span>);     <span class="cm">// 2 bytes: 42 4D</span>
+<span class="fn">tag</span>(<span class="str">"TEX0"</span>);   <span class="cm">// 4 bytes</span>
+<span class="fn">tag</span>(<span class="str">"PNG\r\n\x1A\n"</span>); <span class="cm">// 8-byte PNG signature</span>
+
+<span class="cm">// scheme: read 4 bytes as a tag string</span>
+<span class="fn">tag</span>(<span class="num">4</span>);</pre>
+
+			<!-- PAD / ALIGN -->
+			<h2 class="doc-section" id="pad">pad() and align()</h2>
+
+			<p><strong>pad</strong> inserts exactly <em>n</em> zero bytes. <strong>align</strong> inserts however many
+				zero bytes are needed to bring the cursor to the next multiple of the boundary - computed during
+				resolution.</p>
+
+			<div class="sig"><span class="fn">pad</span>(size: <span class="tp">number</span>): <span
+					class="tp">PadNode</span></div>
+			<div class="sig"><span class="fn">align</span>(boundary: <span class="tp">number</span>): <span
+					class="tp">AlignNode</span></div>
+
+			<pre><span class="kw">const</span> file = <span class="fn">layout</span>(
+  <span class="fn">tag</span>(<span class="str">"PNG"</span>),   <span class="cm">// @0, size 3 → cursor at 3</span>
+  <span class="fn">align</span>(<span class="num">4</span>),     <span class="cm">// inserts 1 byte → cursor at 4</span>
+  <span class="fn">u32</span>(<span class="num">1</span>),       <span class="cm">// @4</span>
+  <span class="fn">pad</span>(<span class="num">8</span>),       <span class="cm">// always exactly 8 zero bytes</span>
+);</pre>
+
+			<div class="callout note">
+				<div class="callout-label">Note</div>
+				<p><code>AlignNode.size</code> is <code>0</code> at construction time. The real padding size is computed
+					during resolution when the node's offset is known.</p>
+			</div>
+
+			<!-- REF -->
+			<h2 class="doc-section" id="ref">ref()</h2>
+
+			<p>A symbolic reference to another node. During resolution, <code>ref(target)</code> becomes a 4-byte
+				little-endian unsigned integer holding the byte offset of <code>target</code> in the final layout.</p>
+
+			<div class="sig"><span class="fn">ref</span>(target: <span class="tp">LayoutNode</span>): <span
+					class="tp">RefNode</span></div>
+
+			<pre><span class="kw">const</span> body = <span class="fn">section</span>(<span class="str">"body"</span>, <span class="fn">bytes</span>(pixelData));
+
+<span class="kw">const</span> file = <span class="fn">layout</span>(
+  <span class="fn">tag</span>(<span class="str">"TEX0"</span>),         <span class="cm">// 4 bytes @0</span>
+  <span class="fn">ref</span>(body),           <span class="cm">// 4 bytes @4 → resolves to body's offset (8)</span>
+  body,                <span class="cm">// @8</span>
+);
+
+<span class="fn">emit</span>(file);
+<span class="cm">// bytes 4-7: 08 00 00 00 (little-endian offset of body)</span></pre>
+
+			<div class="callout warn">
+				<div class="callout-label">Important</div>
+				<p>The <code>target</code> must exist somewhere in the same layout. If it cannot be found during
+					resolution, an error is thrown.</p>
+			</div>
+
+			<!-- RESERVE -->
+			<h2 class="doc-section" id="reserve">reserve</h2>
+
+			<p>Allocates a fixed-size slot whose value is not known at construction time. Call <code>.set(value)</code>
+				at any point before emitting. Initial value is <code>0</code>.</p>
+
+			<div class="sig">reserve.<span class="fn">u8</span>() → <span class="tp">ReserveNode</span> (1 byte)</div>
+			<div class="sig">reserve.<span class="fn">u16</span>() → <span class="tp">ReserveNode</span> (2 bytes)</div>
+			<div class="sig">reserve.<span class="fn">u32</span>() → <span class="tp">ReserveNode</span> (4 bytes)</div>
+
+			<pre><span class="kw">const</span> checksum = reserve.<span class="fn">u32</span>();
+<span class="kw">const</span> fileSize = reserve.<span class="fn">u32</span>();
+
+<span class="kw">const</span> file = <span class="fn">layout</span>(<span class="fn">tag</span>(<span class="str">"EXE"</span>), fileSize, checksum, <span class="fn">bytes</span>(body));
+
+<span class="cm">// first pass - compute sizes</span>
+<span class="kw">const</span> temp = <span class="fn">emit</span>(file);
+fileSize.<span class="fn">set</span>(temp.byteLength);
+checksum.<span class="fn">set</span>(<span class="fn">computeCRC32</span>(temp));
+
+<span class="cm">// final pass - correct values baked in</span>
+<span class="kw">const</span> final = <span class="fn">emit</span>(file);</pre>
+
+			<!-- COMPOSITION -->
+
+			<h2 class="doc-section" id="layout">layout()</h2>
+
+			<p>The root container for emission. Holds an ordered sequence of nodes and sections. <code>layout</code> is
+				<strong>emit-only</strong> - it carries real values and produces binary via <code>emit()</code>.
+			</p>
+
+			<div class="sig"><span class="fn">layout</span>(...nodes: <span class="tp">LayoutNode</span>[]): <span
+					class="tp">Layout</span></div>
+
+			<pre><span class="kw">const</span> file = <span class="fn">layout</span>(
+  <span class="fn">section</span>(<span class="str">"header"</span>, <span class="fn">tag</span>(<span class="str">"BM"</span>), <span class="fn">u32</span>(<span class="num">102</span>)),
+  <span class="fn">section</span>(<span class="str">"body"</span>,   <span class="fn">bytes</span>(data)),
+);
+
+file.nodes;   <span class="cm">// ReadonlyArray&lt;LayoutNode&gt;</span>
+file.size;    <span class="cm">// total byte size (AlignNode contributes 0 before resolution)</span></pre>
+
+			<div class="callout tip">
+				<div class="callout-label">Design</div>
+				<p><code>layout</code> is a pure construction container - it does not emit, parse, or carry a buffer.
+					Call <code>emit(layout)</code> to produce bytes. Use <code>scheme.load(buffer)</code> to parse bytes
+					back into a layout.</p>
+			</div>
+
+			<!-- SECTION -->
+			<h2 class="doc-section" id="section">section()</h2>
+
+			<p>A named group of nodes. Sections are themselves <code>LayoutNode</code> instances - they can be nested
+				arbitrarily and appear anywhere nodes are accepted.</p>
+
+			<div class="sig"><span class="fn">section</span>(name: <span class="tp">string</span>, ...nodes: <span
+					class="tp">LayoutNode</span>[]): <span class="tp">SectionNode</span></div>
+
+			<p>Section names must match <code>/^[A-Za-z0-9_-]{1,1024}$/</code>. This constraint is validated at
+				construction time.</p>
+
+			<pre><span class="kw">const</span> header = <span class="fn">section</span>(<span class="str">"file-header"</span>,
+  <span class="fn">tag</span>(<span class="str">"BM"</span>), <span class="fn">u32</span>(<span class="num">0</span>), <span class="fn">u32</span>(<span class="num">0</span>),
+);
+
+<span class="cm">// nested sections</span>
+<span class="kw">const</span> chunks = <span class="fn">section</span>(<span class="str">"chunks"</span>,
+  <span class="fn">section</span>(<span class="str">"chunk-a"</span>, <span class="fn">u32</span>(<span class="num">10</span>), <span class="fn">bytes</span>(data)),
+  <span class="fn">section</span>(<span class="str">"chunk-b"</span>, <span class="fn">u32</span>(<span class="num">20</span>)),
+);</pre>
+
+			<!-- EMISSION -->
+
+			<h2 class="doc-section" id="emit">emit()</h2>
+
+			<p>Resolves the layout graph and serializes it to a <code>Uint8Array</code>. This is the
+				<strong>only</strong> function that produces binary output. Resolution (offsets, alignments, references)
+				happens automatically.
+			</p>
+
+			<div class="sig"><span class="fn">emit</span>(root: <span class="tp">Layout</span>): <span
+					class="tp">Uint8Array</span></div>
+
+			<pre><span class="kw">const</span> buf = <span class="fn">emit</span>(file);
+
+<span class="cm">// use anywhere Uint8Array is accepted</span>
+fs.<span class="fn">writeFileSync</span>(<span class="str">"output.bin"</span>, buf);
+socket.<span class="fn">send</span>(buf);
+<span class="kw">new</span> <span class="tp">Blob</span>([buf]);</pre>
+
+			<div class="callout note">
+				<div class="callout-label">Multiple calls</div>
+				<p><code>emit()</code> can be called multiple times. Each call re-resolves from the current node values.
+					For layouts with <code>reserve</code> nodes, the typical pattern is: emit once to compute sizes →
+					set reserved values → emit again for the final binary.</p>
+			</div>
+
+			<!-- RESOLVE -->
+			<h2 class="doc-section" id="resolve">resolve()</h2>
+
+			<p>Runs the resolution phase explicitly and returns an <code>OffsetMap</code> - a
+				<code>Map&lt;LayoutNode, number&gt;</code> from every node to its byte offset. <code>emit()</code> calls
+				this internally; expose it directly for tooling.
+			</p>
+
+			<div class="sig"><span class="fn">resolve</span>(root: <span class="tp">Layout</span>): <span
+					class="tp">OffsetMap</span></div>
+
+			<pre><span class="kw">const</span> offsets = <span class="fn">resolve</span>(file);
+offsets.<span class="fn">get</span>(myNode);  <span class="cm">// → number</span></pre>
+
+			<!-- SCHEMES -->
+
+			<h2 class="doc-section" id="scheme">scheme()</h2>
+
+			<p>A structural template that describes the <em>shape</em> of a binary format. No values - only types and
+				sizes. Calling <code>scheme.load(buffer)</code> produces an independent, fully populated
+				<code>Layout</code>.
+			</p>
+
+			<div class="sig"><span class="fn">scheme</span>(...nodes: <span class="tp">LayoutNode</span>[]): <span
+					class="tp">Scheme</span></div>
+
+			<table class="api-table">
+				<tr>
+					<th>Concept</th>
+					<th>Description</th>
+				</tr>
+				<tr>
+					<td>layout</td>
+					<td>Carries real values. Used to construct and emit binary.</td>
+				</tr>
+				<tr>
+					<td>scheme</td>
+					<td>Carries no values. Reusable parsing template.</td>
+				</tr>
+			</table>
+
+			<pre><span class="kw">const</span> bmpScheme = <span class="fn">scheme</span>(
+  <span class="fn">section</span>(<span class="str">"file-header"</span>,
+    <span class="fn">tag</span>(<span class="num">2</span>),                         <span class="cm">// read 2 bytes as a tag</span>
+    <span class="fn">field</span>(<span class="str">"fileSize"</span>,    <span class="fn">u32</span>()),
+    <span class="fn">u32</span>(),                           <span class="cm">// reserved - no name needed</span>
+    <span class="fn">field</span>(<span class="str">"pixelOffset"</span>, <span class="fn">u32</span>()),
+  ),
+  <span class="fn">section</span>(<span class="str">"dib-header"</span>,
+    <span class="fn">u32</span>(),
+    <span class="fn">field</span>(<span class="str">"width"</span>,     <span class="fn">i32</span>()),
+    <span class="fn">field</span>(<span class="str">"height"</span>,    <span class="fn">i32</span>()),
+    <span class="fn">u16</span>(), <span class="fn">field</span>(<span class="str">"bpp"</span>, <span class="fn">u16</span>()),
+    <span class="fn">u32</span>(), <span class="fn">field</span>(<span class="str">"imageSize"</span>, <span class="fn">u32</span>()),
+    <span class="fn">i32</span>(), <span class="fn">i32</span>(), <span class="fn">u32</span>(), <span class="fn">u32</span>(),
+  ),
+  <span class="fn">section</span>(<span class="str">"pixels"</span>,
+    <span class="fn">bytes</span>(<span class="fn">sizeof</span>(<span class="str">"imageSize"</span>)),     <span class="cm">// size from named field</span>
+  ),
+);</pre>
+
+			<!-- FIELD -->
+			<h2 class="doc-section" id="field">field()</h2>
+
+			<p>Wraps any node with a name, making it addressable by <code>layout.get()</code> and usable as a size
+				source for <code>sizeof()</code>. Transparent in size and emission - delegates entirely to its inner
+				node.</p>
+
+			<div class="sig"><span class="fn">field</span>(name: <span class="tp">string</span>, node: <span
+					class="tp">LayoutNode</span>): <span class="tp">FieldNode</span></div>
+
+			<p>Field names must match <code>/^[A-Za-z0-9_-]{1,1024}$/</code>, validated at construction time.</p>
+
+			<pre><span class="fn">field</span>(<span class="str">"fileSize"</span>,    <span class="fn">u32</span>())  <span class="cm">// named u32 slot</span>
+<span class="fn">field</span>(<span class="str">"pixel-data"</span>, <span class="fn">bytes</span>(<span class="fn">sizeof</span>(<span class="str">"imageSize"</span>)))</pre>
+
+			<p>After <code>scheme.load()</code>, access values via <code>layout.get("fieldName")</code> and mutate with
+				<code>.set(value)</code>.
+			</p>
+
+			<!-- SIZEOF -->
+			<h2 class="doc-section" id="sizeof">sizeof()</h2>
+
+			<p>Scheme-only. A lazy size reference that resolves to the parsed value of the named <code>field()</code>
+				when <code>load()</code> runs. The correct way to express variable-length blobs in schemes.</p>
+
+			<div class="sig"><span class="fn">sizeof</span>(name: <span class="tp">string</span>): <span
+					class="tp">SizeofRef</span></div>
+
+			<pre><span class="kw">const</span> s = <span class="fn">scheme</span>(
+  <span class="fn">field</span>(<span class="str">"dataSize"</span>, <span class="fn">u32</span>()),
+  <span class="fn">bytes</span>(<span class="fn">sizeof</span>(<span class="str">"dataSize"</span>)),  <span class="cm">// reads dataSize bytes</span>
+);
+
+<span class="cm">// buffer: [03 00 00 00 AA BB CC]</span>
+<span class="kw">const</span> l = s.<span class="fn">load</span>(buf);
+l.<span class="fn">get</span>(<span class="str">"dataSize"</span>).value;  <span class="cm">// 3</span>
+<span class="cm">// bytes node holds [AA, BB, CC]</span></pre>
+
+			<div class="callout warn">
+				<div class="callout-label">Scheme only</div>
+				<p><code>sizeof()</code> is not valid in <code>layout</code> context. An error is thrown if the
+					referenced field name is not found in the scheme at load time.</p>
+			</div>
+
+			<!-- SCHEME LOAD -->
+			<h2 class="doc-section" id="schemeload">scheme.load()</h2>
+
+			<p>Parses a <code>Uint8Array</code> against the scheme and returns a fully populated, independent
+				<code>Layout</code>. Each call produces a completely separate layout - the scheme itself is never
+				mutated.
+			</p>
+
+			<div class="sig">scheme.<span class="fn">load</span>(buffer: <span class="tp">Uint8Array</span>): <span
+					class="tp">Layout</span></div>
+
+			<pre><span class="kw">const</span> bmp1 = bmpScheme.<span class="fn">load</span>(buffer1);
+<span class="kw">const</span> bmp2 = bmpScheme.<span class="fn">load</span>(buffer2);
+
+<span class="cm">// independent - mutating bmp1 does not affect bmp2</span>
+bmp1.<span class="fn">get</span>(<span class="str">"width"</span>).<span class="fn">set</span>(<span class="num">800</span>);
+bmp2.<span class="fn">get</span>(<span class="str">"width"</span>).value;  <span class="cm">// unchanged</span>
+
+<span class="cm">// the result is a normal Layout - all APIs work</span>
+<span class="fn">emit</span>(bmp1);
+<span class="fn">inspect</span>(bmp1);
+<span class="fn">treeview</span>(<span class="fn">inspect</span>(bmp1));</pre>
+
+			<!-- LAYOUT API -->
+
+			<h2 class="doc-section" id="get">layout.get()</h2>
+
+			<p>Unified path and offset accessor. Works on any <code>Layout</code> - including those produced by
+				<code>scheme.load()</code>.
+			</p>
+
+			<table class="api-table">
+				<tr>
+					<th>Signature</th>
+					<th>Returns</th>
+					<th>Description</th>
+				</tr>
+				<tr>
+					<td>get(path)</td>
+					<td>LayoutNode</td>
+					<td>Node at dot-separated path. Throws if not found.</td>
+				</tr>
+				<tr>
+					<td>get(path with *, max?)</td>
+					<td>LayoutNode[]</td>
+					<td>Wildcard - all matching nodes, up to <code>max</code>.</td>
+				</tr>
+				<tr>
+					<td>get(offset)</td>
+					<td>LayoutNode</td>
+					<td>Node at exact byte offset. Throws if not found.</td>
+				</tr>
+				<tr>
+					<td>get(start, end)</td>
+					<td>LayoutNode[]</td>
+					<td>All nodes with range <code>[start, end)</code>.</td>
+				</tr>
+			</table>
+
+			<pre><span class="kw">const</span> bmp = bmpScheme.<span class="fn">load</span>(buffer);
+
+<span class="cm">// by name - searches all sections</span>
+bmp.<span class="fn">get</span>(<span class="str">"width"</span>).value;
+
+<span class="cm">// by dot path</span>
+bmp.<span class="fn">get</span>(<span class="str">"dib-header.width"</span>).value;
+bmp.<span class="fn">get</span>(<span class="str">"file-header"</span>);              <span class="cm">// → SectionNode</span>
+
+<span class="cm">// by byte offset</span>
+bmp.<span class="fn">get</span>(<span class="num">18</span>);                          <span class="cm">// → node at byte 18</span>
+
+<span class="cm">// by byte range</span>
+bmp.<span class="fn">get</span>(<span class="num">0</span>, <span class="num">14</span>);                       <span class="cm">// → all nodes in [0, 14)</span>
+
+<span class="cm">// wildcard - all fields named "size"</span>
+bmp.<span class="fn">get</span>(<span class="str">"*.size"</span>);                    <span class="cm">// → LayoutNode[]</span>
+
+<span class="cm">// wildcard with max results</span>
+bmp.<span class="fn">get</span>(<span class="str">"*.size"</span>, <span class="num">3</span>);               <span class="cm">// → LayoutNode[] (max 3)</span></pre>
+
+			<div class="callout note">
+				<div class="callout-label">Path syntax</div>
+				<p>Each segment must match <code>/^[A-Za-z0-9_-]{1,1024}$/</code>. Use <code>*</code> as a wildcard
+					segment to match any name. Dot notation separates levels: <code>"section-name.field-name"</code>.
+					TypeScript's return type is automatically narrowed - paths containing <code>*</code> return
+					<code>LayoutNode[]</code>, all others return <code>LayoutNode</code>.
+				</p>
+			</div>
+
+			<!-- FIELD SET -->
+			<h2 class="doc-section" id="fieldset">field.set()</h2>
+
+			<p>Mutates the value of a named field in place. Works on any <code>FieldNode</code> returned by
+				<code>layout.get()</code>. The next <code>emit()</code> call uses the updated value.
+			</p>
+
+			<div class="sig">fieldNode.<span class="fn">set</span>(value: <span class="tp">number</span>): <span
+					class="tp">void</span></div>
+
+			<pre><span class="kw">const</span> bmp = bmpScheme.<span class="fn">load</span>(buffer);
+
+bmp.<span class="fn">get</span>(<span class="str">"dib-header.width"</span>).value;   <span class="cm">// 4</span>
+bmp.<span class="fn">get</span>(<span class="str">"dib-header.width"</span>).<span class="fn">set</span>(<span class="num">800</span>);
+
+<span class="kw">const</span> out = <span class="fn">emit</span>(bmp);               <span class="cm">// width field now 800</span>
+
+<span class="cm">// wildcard set - all "size" fields to 0</span>
+(bmp.<span class="fn">get</span>(<span class="str">"*.size"</span>) <span class="kw">as</span> <span class="tp">FieldNode</span>[]).<span class="fn">forEach</span>(f => f.<span class="fn">set</span>(<span class="num">0</span>));</pre>
+
+			<!-- INSPECTION -->
+
+			<h2 class="doc-section" id="inspect">inspect()</h2>
+
+			<p>The core inspection primitive. Returns a JSON-serializable tree describing the layout's complete
+				structure - every section and node with offsets, sizes, types, labels, and values.</p>
+
+			<div class="sig"><span class="fn">inspect</span>(root: <span class="tp">Layout</span>): <span
+					class="tp">Inspector</span></div>
+
+			<p><code>Inspector</code> is <code>InspectorNode[]</code>. Each element is either an
+				<code>InspectorSection</code> or an <code>InspectorLeaf</code>:
+			</p>
+
+			<pre><span class="cm">// InspectorSection</span>
+{
+  kind:   <span class="str">"section"</span>,
+  name:   <span class="str">"file-header"</span>,
+  offset: <span class="num">0</span>,
+  size:   <span class="num">14</span>,
+  nodes:  <span class="tp">InspectorNode</span>[],
+}
+
+<span class="cm">// InspectorLeaf</span>
+{
+  kind:   <span class="str">"leaf"</span>,
+  type:   <span class="str">"u32"</span>,        <span class="cm">// "u8" | "u16" | "u32" | "i8" | ... | "bytes" | "tag" | ...</span>
+  label:  <span class="str">"U32(102)"</span>,
+  offset: <span class="num">2</span>,
+  size:   <span class="num">4</span>,
+  value:  <span class="num">102</span>,          <span class="cm">// number | string | number[] | null</span>
+}</pre>
+
+			<pre><span class="kw">const</span> tree = <span class="fn">inspect</span>(layout);
+
+<span class="cm">// fully JSON-serializable</span>
+<span class="kw">const</span> json = JSON.<span class="fn">stringify</span>(tree, <span class="kw">null</span>, <span class="num">2</span>);
+fs.<span class="fn">writeFileSync</span>(<span class="str">"layout.json"</span>, json);
+
+<span class="cm">// navigate programmatically</span>
+tree[<span class="num">0</span>].kind;                 <span class="cm">// "section"</span>
+tree[<span class="num">0</span>].nodes[<span class="num">0</span>].type;        <span class="cm">// "tag"</span>
+tree[<span class="num">0</span>].nodes[<span class="num">0</span>].value;       <span class="cm">// "BM"</span>
+tree[<span class="num">0</span>].nodes[<span class="num">0</span>].offset;      <span class="cm">// 0</span></pre>
+
+			<div class="callout tip">
+				<div class="callout-label">Philosophy</div>
+				<p><code>inspect()</code> is the guaranteed contract. It returns raw structured data - how you present
+					it is entirely up to you. Use <code>treeview()</code> and <code>hexdump()</code> for quick terminal
+					output, or build your own GUI renderer, diff tool, or binary visualizer on top of the
+					<code>Inspector</code> tree.
+				</p>
+			</div>
+
+			<!-- TREEVIEW -->
+			<h2 class="doc-section" id="treeview">treeview()</h2>
+
+			<p>Convenience printer. Takes an <code>Inspector</code> and prints a tree to the console. A thin helper
+				built on top of <code>inspect()</code> - not a core primitive.</p>
+
+			<div class="sig"><span class="fn">treeview</span>(inspector: <span class="tp">Inspector</span>): <span
+					class="tp">void</span></div>
+
+			<pre><span class="fn">treeview</span>(<span class="fn">inspect</span>(layout));
+
+<span class="cm">// Layout
+// ├─ Section("file-header")  @0000  +14
+// │  ├─ Tag("BM")                    @0000  +2
+// │  ├─ U32(102) (fileSize)          @0002  +4
+// │  └─ U32(54)  (pixelOffset)       @000a  +4
+// └─ Section("pixels")  @000e  +48
+//    └─ Bytes(48)                    @000e  +48</span></pre>
+
+			<!-- HEXDUMP -->
+			<h2 class="doc-section" id="hexdump">hexdump()</h2>
+
+			<p>Convenience printer. Takes an <code>Inspector</code> and prints a classic hex dump to the console,
+				reconstructing byte values from the inspect tree. 16 bytes per row.</p>
+
+			<div class="sig"><span class="fn">hexdump</span>(inspector: <span class="tp">Inspector</span>): <span
+					class="tp">void</span></div>
+
+			<pre><span class="fn">hexdump</span>(<span class="fn">inspect</span>(layout));
+
+<span class="cm">// 00000000  42 4D 66 00 00 00 00 00  00 00 36 00 00 00 28 00
+// 00000010  00 00 04 00 00 00 04 00  00 00 01 00 18 00 00 00
+// ...</span></pre>
+
+			<!-- SERIALIZE -->
+			<h2 class="doc-section" id="serialize">serialize()</h2>
+
+			<p>Restores a fully live <code>Layout</code> from an <code>Inspector</code> tree or a JSON string. The
+				restored layout is fully functional - emittable, inspectable, and accessible via <code>get()</code>.</p>
+
+			<div class="sig"><span class="fn">serialize</span>(input: <span class="tp">Inspector</span> | <span
+					class="tp">string</span>): <span class="tp">Layout</span></div>
+
+			<pre><span class="cm">// from Inspector object</span>
+<span class="kw">const</span> tree     = <span class="fn">inspect</span>(layout);
+<span class="kw">const</span> restored = <span class="fn">serialize</span>(tree);
+
+<span class="cm">// from JSON string - full round-trip</span>
+<span class="kw">const</span> json      = JSON.<span class="fn">stringify</span>(<span class="fn">inspect</span>(layout));
+<span class="kw">const</span> fromJson  = <span class="fn">serialize</span>(json);
+
+<span class="cm">// fully live</span>
+<span class="fn">emit</span>(restored);           <span class="cm">// → identical Uint8Array</span>
+<span class="fn">inspect</span>(restored);        <span class="cm">// → same tree</span>
+restored.<span class="fn">get</span>(<span class="str">"width"</span>);   <span class="cm">// → FieldNode</span></pre>
+
+			<div class="callout note">
+				<div class="callout-label">ref() after serialize</div>
+				<p><code>RefNode</code> instances are restored as plain <code>u32</code> nodes holding the resolved
+					offset value. The symbolic edge is not preserved - only the resolved state is captured. Custom nodes
+					require registration via <code>registerNode()</code> to survive serialization.</p>
+			</div>
+
+			<!-- EXTENSION -->
+
+			<h2 class="doc-section" id="custom">Custom Nodes</h2>
+
+			<p>Extend <code>LayoutNode</code> to create fully integrated custom node types. They participate in
+				<code>emit()</code>, <code>inspect()</code>, <code>treeview()</code>, <code>hexdump()</code>,
+				<code>serialize()</code>, and scheme parsing automatically.
+			</p>
+
+			<h3>Contract</h3>
+
+			<table class="api-table">
+				<tr>
+					<th>Method</th>
+					<th>Required</th>
+					<th>Description</th>
+				</tr>
+				<tr>
+					<td>readonly size: number</td>
+					<td>Yes</td>
+					<td>Byte length of this node. Must be a fixed value.</td>
+				</tr>
+				<tr>
+					<td>_emit(view, offset)</td>
+					<td>Yes</td>
+					<td>Write this node's bytes into <code>view</code> at <code>offset</code>.</td>
+				</tr>
+				<tr>
+					<td>_load(buffer, offset, remaining)</td>
+					<td>For scheme parsing</td>
+					<td>Read and store value from <code>buffer</code> at <code>offset</code>.</td>
+				</tr>
+				<tr>
+					<td>_inspect()</td>
+					<td>Recommended</td>
+					<td>Return <code>{ type, label, value }</code> for inspection output.</td>
+				</tr>
+				<tr>
+					<td>static fromInspect(node)</td>
+					<td>For serialize()</td>
+					<td>Reconstruct an instance from an <code>InspectorLeaf</code>.</td>
+				</tr>
+			</table>
+
+			<pre><span class="kw">import</span> { <span class="tp">LayoutNode</span>, <span class="fn">registerNode</span> } <span class="kw">from</span> <span class="str">"@gottheflag/spun"</span>;
+<span class="kw">import type</span> { <span class="tp">InspectorLeaf</span> } <span class="kw">from</span> <span class="str">"@gottheflag/spun"</span>;
+
+<span class="kw">class</span> <span class="tp">XoredNode</span> <span class="kw">extends</span> <span class="tp">LayoutNode</span> {
+  <span class="kw">readonly</span> size = <span class="num">4</span>;
+  value: <span class="tp">number</span>;
+  key:   <span class="tp">number</span>;
+
+  <span class="fn">constructor</span>(value: <span class="tp">number</span>, key: <span class="tp">number</span>) {
+    <span class="kw">super</span>();
+    this.value = value;
+    this.key   = key;
+  }
+
+  <span class="cm">// write XOR-obfuscated value</span>
+  <span class="fn">_emit</span>(view: <span class="tp">DataView</span>, offset: <span class="tp">number</span>): <span class="tp">void</span> {
+    view.<span class="fn">setUint32</span>(offset, this.value ^ this.key, <span class="kw">true</span>);
+  }
+
+  <span class="cm">// read and de-obfuscate</span>
+  <span class="fn">_load</span>(buffer: <span class="tp">Uint8Array</span>, offset: <span class="tp">number</span>): <span class="tp">void</span> {
+    <span class="kw">const</span> raw = <span class="kw">new</span> <span class="tp">DataView</span>(buffer.buffer).<span class="fn">getUint32</span>(offset, <span class="kw">true</span>);
+    this.value = raw ^ this.key;
+  }
+
+  <span class="cm">// inspection output</span>
+  <span class="fn">_inspect</span>() {
+    <span class="kw">return</span> {
+      type:  <span class="str">"xored"</span>,
+      label: <span class="str">`XOR(</span>${this.value}<span class="str">, key=</span>${this.key}<span class="str">)`</span>,
+      value: { raw: this.value, key: this.key },
+    };
+  }
+
+  <span class="cm">// restore from serialized JSON</span>
+  <span class="kw">static</span> <span class="fn">fromInspect</span>(node: <span class="tp">InspectorLeaf</span>): <span class="tp">XoredNode</span> {
+    <span class="kw">const</span> v = node.value <span class="kw">as</span> { raw: <span class="tp">number</span>; key: <span class="tp">number</span> };
+    <span class="kw">return</span> <span class="kw">new</span> <span class="tp">XoredNode</span>(v.raw, v.key);
+  }
+}
+
+<span class="fn">registerNode</span>(<span class="str">"xored"</span>, <span class="tp">XoredNode</span>);
+
+<span class="cm">// use it</span>
+<span class="kw">const</span> node = <span class="kw">new</span> <span class="tp">XoredNode</span>(<span class="num">0xDEAD</span>, <span class="num">0xFF</span>);
+<span class="kw">const</span> file = <span class="fn">layout</span>(<span class="fn">tag</span>(<span class="str">"XOR"</span>), node);
+<span class="fn">emit</span>(file);    <span class="cm">// node emits XOR-obfuscated bytes</span>
+<span class="fn">inspect</span>(file); <span class="cm">// _inspect() output appears in tree</span>
+
+<span class="cm">// full round-trip through JSON</span>
+<span class="kw">const</span> restored = <span class="fn">serialize</span>(JSON.<span class="fn">stringify</span>(<span class="fn">inspect</span>(file)));
+<span class="fn">emit</span>(restored); <span class="cm">// identical bytes</span></pre>
+
+			<!-- REGISTRY -->
+			<h2 class="doc-section" id="registry">registerNode() / resolveNode()</h2>
+
+			<p>The node registry maps string keys to custom node constructors. Used by <code>serialize()</code> to
+				reconstruct custom nodes from JSON. The key must match the <code>type</code> field returned by
+				<code>_inspect()</code>.
+			</p>
+
+			<div class="sig"><span class="fn">registerNode</span>(key: <span class="tp">string</span>, ctor: <span
+					class="kw">typeof</span> <span class="tp">LayoutNode</span>): <span class="tp">void</span></div>
+			<div class="sig"><span class="fn">resolveNode</span>(key: <span class="tp">string</span>): <span
+					class="kw">typeof</span> <span class="tp">LayoutNode</span> | <span class="tp">undefined</span>
+			</div>
+
+			<pre><span class="fn">registerNode</span>(<span class="str">"crc32"</span>,    <span class="tp">CRC32Node</span>);
+<span class="fn">registerNode</span>(<span class="str">"lz4-block"</span>, <span class="tp">LZ4BlockNode</span>);
+
+<span class="cm">// throws if key is already registered</span>
+<span class="fn">registerNode</span>(<span class="str">"crc32"</span>, <span class="tp">AnotherNode</span>); <span class="cm">// Error!</span>
+
+<span class="cm">// look up - used internally by serialize()</span>
+<span class="fn">resolveNode</span>(<span class="str">"crc32"</span>); <span class="cm">// → CRC32Node constructor</span></pre>
+
+			<!-- GUIDES -->
+
+			<h2 class="doc-section" id="guide-bmp">Guide: Emit a BMP File</h2>
+
+			<p>Produces a valid, openable 24-bit BMP image. Demonstrates <code>layout</code>, <code>section</code>,
+				<code>tag</code>, <code>u16</code>, <code>u32</code>, <code>i32</code>, <code>bytes</code>,
+				<code>reserve</code>, and <code>emit</code>.
+			</p>
+
+			<pre><span class="kw">import</span> { writeFileSync } <span class="kw">from</span> <span class="str">"fs"</span>;
+<span class="kw">import</span> { layout, section, tag, u16, u32, i32, bytes, reserve, emit } <span class="kw">from</span> <span class="str">"@gottheflag/spun"</span>;
+
+<span class="kw">const</span> width  = <span class="num">4</span>;
+<span class="kw">const</span> height = <span class="num">4</span>;
+
+<span class="cm">// build pixel data - BGR, bottom-to-top row order, rows padded to 4 bytes</span>
+<span class="kw">const</span> rowSize   = width * <span class="num">3</span>;                          <span class="cm">// 12 bytes, already aligned</span>
+<span class="kw">const</span> pixelData = <span class="kw">new</span> <span class="tp">Uint8Array</span>(rowSize * height);
+<span class="cm">// ... fill pixelData with BGR values ...</span>
+
+<span class="kw">const</span> fileSize    = reserve.<span class="fn">u32</span>();
+<span class="kw">const</span> pixelOffset = reserve.<span class="fn">u32</span>();
+
+<span class="kw">const</span> file = <span class="fn">layout</span>(
+  <span class="fn">section</span>(<span class="str">"file-header"</span>,
+    <span class="fn">tag</span>(<span class="str">"BM"</span>),
+    fileSize,
+    <span class="fn">u32</span>(<span class="num">0</span>),           <span class="cm">// reserved</span>
+    pixelOffset,
+  ),
+  <span class="fn">section</span>(<span class="str">"dib-header"</span>,
+    <span class="fn">u32</span>(<span class="num">40</span>),           <span class="cm">// BITMAPINFOHEADER size</span>
+    <span class="fn">i32</span>(width),
+    <span class="fn">i32</span>(height),
+    <span class="fn">u16</span>(<span class="num">1</span>),            <span class="cm">// color planes</span>
+    <span class="fn">u16</span>(<span class="num">24</span>),           <span class="cm">// bits per pixel</span>
+    <span class="fn">u32</span>(<span class="num">0</span>),            <span class="cm">// compression: none</span>
+    <span class="fn">u32</span>(pixelData.byteLength),
+    <span class="fn">i32</span>(<span class="num">2835</span>), <span class="fn">i32</span>(<span class="num">2835</span>), <span class="cm">// ~72 DPI</span>
+    <span class="fn">u32</span>(<span class="num">0</span>), <span class="fn">u32</span>(<span class="num">0</span>),
+  ),
+  <span class="fn">section</span>(<span class="str">"pixels"</span>, <span class="fn">bytes</span>(pixelData)),
+);
+
+<span class="cm">// resolve deferred fields</span>
+<span class="kw">const</span> temp = <span class="fn">emit</span>(file);
+fileSize.<span class="fn">set</span>(temp.byteLength);
+pixelOffset.<span class="fn">set</span>(<span class="num">54</span>);  <span class="cm">// 14 (file header) + 40 (DIB header)</span>
+
+<span class="fn">writeFileSync</span>(<span class="str">"output.bmp"</span>, <span class="fn">emit</span>(file));</pre>
+
+			<!-- GUIDE: PARSE -->
+			<h2 class="doc-section" id="guide-parse">Guide: Parse a BMP File</h2>
+
+			<p>Define a scheme once, load any conforming BMP into an inspectable, editable layout.</p>
+
+			<pre><span class="kw">import</span> { readFileSync, writeFileSync } <span class="kw">from</span> <span class="str">"fs"</span>;
+<span class="kw">import</span> {
+  scheme, section, field, sizeof,
+  tag, u16, u32, i32, bytes,
+  emit, inspect, treeview,
+} <span class="kw">from</span> <span class="str">"@gottheflag/spun"</span>;
+
+<span class="kw">const</span> bmpScheme = <span class="fn">scheme</span>(
+  <span class="fn">section</span>(<span class="str">"file-header"</span>,
+    <span class="fn">tag</span>(<span class="num">2</span>),
+    <span class="fn">field</span>(<span class="str">"fileSize"</span>,    <span class="fn">u32</span>()),
+    <span class="fn">u32</span>(),
+    <span class="fn">field</span>(<span class="str">"pixelOffset"</span>, <span class="fn">u32</span>()),
+  ),
+  <span class="fn">section</span>(<span class="str">"dib-header"</span>,
+    <span class="fn">u32</span>(),
+    <span class="fn">field</span>(<span class="str">"width"</span>,     <span class="fn">i32</span>()),
+    <span class="fn">field</span>(<span class="str">"height"</span>,    <span class="fn">i32</span>()),
+    <span class="fn">u16</span>(), <span class="fn">field</span>(<span class="str">"bpp"</span>, <span class="fn">u16</span>()),
+    <span class="fn">u32</span>(), <span class="fn">field</span>(<span class="str">"imageSize"</span>, <span class="fn">u32</span>()),
+    <span class="fn">i32</span>(), <span class="fn">i32</span>(), <span class="fn">u32</span>(), <span class="fn">u32</span>(),
+  ),
+  <span class="fn">section</span>(<span class="str">"pixels"</span>, <span class="fn">bytes</span>(<span class="fn">sizeof</span>(<span class="str">"imageSize"</span>))),
+);
+
+<span class="cm">// parse</span>
+<span class="kw">const</span> buf = readFileSync(<span class="str">"output.bmp"</span>);
+<span class="kw">const</span> bmp = bmpScheme.<span class="fn">load</span>(<span class="kw">new</span> <span class="tp">Uint8Array</span>(buf));
+
+<span class="cm">// inspect</span>
+<span class="fn">treeview</span>(<span class="fn">inspect</span>(bmp));
+
+<span class="cm">// read</span>
+bmp.<span class="fn">get</span>(<span class="str">"width"</span>).value;    <span class="cm">// 4</span>
+bmp.<span class="fn">get</span>(<span class="str">"height"</span>).value;   <span class="cm">// 4</span>
+bmp.<span class="fn">get</span>(<span class="str">"bpp"</span>).value;      <span class="cm">// 24</span>
+
+<span class="cm">// modify and re-emit</span>
+bmp.<span class="fn">get</span>(<span class="str">"dib-header.width"</span>).<span class="fn">set</span>(<span class="num">800</span>);
+bmp.<span class="fn">get</span>(<span class="str">"dib-header.height"</span>).<span class="fn">set</span>(<span class="num">600</span>);
+<span class="fn">writeFileSync</span>(<span class="str">"modified.bmp"</span>, <span class="fn">emit</span>(bmp));
+
+<span class="cm">// persist the layout as JSON</span>
+<span class="kw">import</span> { serialize } <span class="kw">from</span> <span class="str">"@gottheflag/spun"</span>;
+<span class="kw">const</span> json     = JSON.<span class="fn">stringify</span>(<span class="fn">inspect</span>(bmp));
+<span class="kw">const</span> restored = <span class="fn">serialize</span>(json);
+<span class="fn">emit</span>(restored);  <span class="cm">// identical bytes</span></pre>
+
+			<!-- GUIDE: CUSTOM -->
+			<h2 class="doc-section" id="guide-custom">Guide: Custom CRC32 Node</h2>
+
+			<p>A complete custom node that stores a CRC32 checksum. Integrates with emit, inspect, and serialize.</p>
+
+			<pre><span class="kw">import</span> { <span class="tp">LayoutNode</span>, <span class="fn">registerNode</span>, layout, tag, bytes, emit } <span class="kw">from</span> <span class="str">"@gottheflag/spun"</span>;
+<span class="kw">import type</span> { <span class="tp">InspectorLeaf</span> } <span class="kw">from</span> <span class="str">"@gottheflag/spun"</span>;
+
+<span class="kw">function</span> <span class="fn">crc32</span>(data: <span class="tp">Uint8Array</span>): <span class="tp">number</span> {
+  <span class="cm">// your CRC32 implementation here</span>
+  <span class="kw">let</span> crc = <span class="num">0xFFFFFFFF</span>;
+  <span class="kw">for</span> (<span class="kw">const</span> byte <span class="kw">of</span> data) {
+    crc ^= byte;
+    <span class="kw">for</span> (<span class="kw">let</span> i = <span class="num">0</span>; i < <span class="num">8</span>; i++)
+      crc = (crc >>> <span class="num">1</span>) ^ (<span class="num">0xEDB88320</span> & <span class="op">-</span>(crc & <span class="num">1</span>));
+  }
+  <span class="kw">return</span> (crc ^ <span class="num">0xFFFFFFFF</span>) >>> <span class="num">0</span>;
+}
+
+<span class="kw">class</span> <span class="tp">CRC32Node</span> <span class="kw">extends</span> <span class="tp">LayoutNode</span> {
+  <span class="kw">readonly</span> size = <span class="num">4</span>;
+  value = <span class="num">0</span>;
+
+  <span class="fn">_emit</span>(view: <span class="tp">DataView</span>, offset: <span class="tp">number</span>): <span class="tp">void</span> {
+    view.<span class="fn">setUint32</span>(offset, this.value, <span class="kw">true</span>);
+  }
+
+  <span class="fn">_load</span>(buffer: <span class="tp">Uint8Array</span>, offset: <span class="tp">number</span>): <span class="tp">void</span> {
+    this.value = <span class="kw">new</span> <span class="tp">DataView</span>(buffer.buffer).<span class="fn">getUint32</span>(offset, <span class="kw">true</span>);
+  }
+
+  <span class="fn">_inspect</span>() {
+    <span class="kw">return</span> {
+      type:  <span class="str">"crc32"</span>,
+      label: <span class="str">`CRC32(0x</span>${this.value.<span class="fn">toString</span>(<span class="num">16</span>).<span class="fn">padStart</span>(<span class="num">8</span>, <span class="str">"0"</span>)}<span class="str">)`</span>,
+      value: this.value,
+    };
+  }
+
+  <span class="kw">static</span> <span class="fn">fromInspect</span>(node: <span class="tp">InspectorLeaf</span>): <span class="tp">CRC32Node</span> {
+    <span class="kw">const</span> n = <span class="kw">new</span> <span class="tp">CRC32Node</span>();
+    n.value = node.value <span class="kw">as</span> <span class="tp">number</span>;
+    <span class="kw">return</span> n;
+  }
+}
+
+<span class="fn">registerNode</span>(<span class="str">"crc32"</span>, <span class="tp">CRC32Node</span>);
+
+<span class="cm">// usage</span>
+<span class="kw">const</span> data     = <span class="kw">new</span> <span class="tp">Uint8Array</span>([<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>, <span class="num">4</span>]);
+<span class="kw">const</span> checksum = <span class="kw">new</span> <span class="tp">CRC32Node</span>();
+
+<span class="kw">const</span> file = <span class="fn">layout</span>(<span class="fn">tag</span>(<span class="str">"DAT"</span>), checksum, <span class="fn">bytes</span>(data));
+
+checksum.value = <span class="fn">crc32</span>(data);
+
+<span class="kw">const</span> out = <span class="fn">emit</span>(file);
+<span class="cm">// [44 41 54 | crc32 bytes | 01 02 03 04]</span></pre>
+
+			<!-- FOOTER -->
+			<div class="divider" style="margin-top:4rem"></div>
+			<p style="font-family:var(--mono);font-size:12px;color:var(--muted2);text-align:center">
+				Copyright © <a href="https://github.com/gottheflag">GTF</a>.
+			</p>
+
+		</div>
+	</main>
+
+	<script>
+		const sections = document.querySelectorAll('.doc-section');
+		const links = document.querySelectorAll('.sidebar-nav a');
+
+		const obs = new IntersectionObserver(entries => {
+			entries.forEach(e => {
+				if (e.isIntersecting) {
+					links.forEach(l => l.classList.remove('active'));
+					const a = document.querySelector(`.sidebar-nav a[href="#${e.target.id}"]`);
+					if (a) a.classList.add('active');
+				}
+			});
+		}, { rootMargin: '-10% 0px -80% 0px' });
+
+		sections.forEach(s => obs.observe(s));
+	</script>
+</body>
+
+</html>
