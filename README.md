@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./docs/logo.png" alt="spun" width="120" />
+  <img src="./docs/assets/logo.png" alt="spun" width="120" />
 </p>
 
 <h3 align="center">spun</h3>
