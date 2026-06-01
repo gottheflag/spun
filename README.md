@@ -5,7 +5,7 @@
 <h3 align="center">spun</h3>
 <p align="center">Composable binary layouts, inspection, and schemes.</p>
 
-[![Socket Badge](https://badge.socket.dev/npm/package/@gottheflag/spun/0.1.0-beta.1)](https://badge.socket.dev/npm/package/@gottheflag/spun/0.1.0-beta.1)
+[![Socket Badge](https://badge.socket.dev/npm/package/@gottheflag/spun/0.1.0-beta.3)](https://badge.socket.dev/npm/package/@gottheflag/spun/0.1.0-beta.3)
 
 <br />
 
