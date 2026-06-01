@@ -5,6 +5,8 @@
 <h3 align="center">spun</h3>
 <p align="center">Composable binary layouts, inspection, and schemes.</p>
 
+[![Socket Badge](https://badge.socket.dev/npm/package/@gottheflag/spun/0.1.0-beta.1)](https://badge.socket.dev/npm/package/@gottheflag/spun/0.1.0-beta.1)
+
 <br />
 
 ## What is it?
@@ -12,7 +14,7 @@
 spun is a retained binary layout engine. Instead of writing bytes immediately, you build an in-memory graph of typed nodes — then resolve, inspect, edit, and emit whenever you're ready.
 
 ```ts
-import { layout, section, tag, u16, u32, reserve, emit } from "spun";
+import { layout, section, tag, u16, u32, reserve, emit } from "@gottheflag/spun";
 
 const fileSize = reserve.u32();
 

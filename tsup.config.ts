@@ -9,6 +9,11 @@ export default defineConfig({
 		"src/inspect/index.ts"
 	],
 	format: ["esm"],
+	target: "es2022",
 	dts: true,
-	clean: true
+	clean: true,
+	bundle: true,
+	minify: true,
+	sourcemap: true,
+	outExtension: () => ({ js: ".js" })
 });
