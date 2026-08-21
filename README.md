@@ -48,7 +48,7 @@ npm install @gottheflag/spun
 
 ## Documentation
 
-Full API reference and guides at [`docs/index.html`](./docs/index.html).
+Full API reference and guides at [gottheflag.github.io/spun](https://gottheflag.github.io/spun/).
 
 ## License
 

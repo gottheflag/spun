@@ -49,7 +49,7 @@
     "bugs": {
         "url": "https://github.com/gottheflag/spun/issues"
     },
-    "homepage": "https://github.com/gottheflag/spun#readme",
+    "homepage": "https://gottheflag.github.io/spun",
     "scripts": {
         "dev": "tsc --watch",
         "build": "tsup",
