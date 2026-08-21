@@ -15,6 +15,6 @@ export default defineConfig({
 	bundle: true,
 	minify: true,
 	sourcemap: true,
-	splitting: false,
+	splitting: true,
 	outExtension: () => ({ js: ".js" })
 });

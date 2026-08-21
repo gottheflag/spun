@@ -1,6 +1,6 @@
 {
     "name": "@gottheflag/spun",
-    "version": "0.1.0-beta.3",
+    "version": "0.1.0-beta.4",
     "type": "module",
     "license": "Apache-2.0",
     "author": {
@@ -55,7 +55,7 @@
         "build": "tsup",
         "typecheck": "tsc --noEmit",
         "prepare": "pnpm run build",
-        "test": "tsx tests/run.ts"
+        "test": "tsx tests/run.ts && pnpm build && node tests/package.mjs"
     },
     "devDependencies": {
         "tsup": "^8.5",
